@@ -82,95 +82,92 @@ export default function Dashboard() {
     }
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
 
-  const isEditing = Boolean(editing);
+    const isEditing = Boolean(editing);
 
-  // ✅ Create optimistic product
-  const optimisticProduct = {
-    id: editing || "temp-" + Math.random().toString(36).slice(2),
-    name: form.name,
-    price: form.price,
-    category: form.category,
-    description: form.description,
-    image: form.image
-      ? URL.createObjectURL(form.image)
-      : products.find(p => p.id === editing)?.image,
-  };
+    // ✅ Create optimistic product
+    const optimisticProduct = {
+      id: editing || "temp-" + Math.random().toString(36).slice(2),
+      name: form.name,
+      price: form.price,
+      category: form.category,
+      description: form.description,
+      image: form.image
+        ? URL.createObjectURL(form.image)
+        : products.find((p) => p.id === editing)?.image,
+    };
 
-  // ✅ Update the products state immediately
-  if (isEditing) {
-    setProducts(prev =>
-      prev.map(p => (p.id === editing ? optimisticProduct : p))
-    );
-  } else {
-    setProducts(prev => [optimisticProduct, ...prev]);
-  }
+    // ✅ Update the products state immediately
+    if (isEditing) {
+      setProducts((prev) =>
+        prev.map((p) => (p.id === editing ? optimisticProduct : p))
+      );
+    } else {
+      setProducts((prev) => [optimisticProduct, ...prev]);
+    }
 
-  setOpen(false);
-  setEditing(null);
+    setOpen(false);
+    setEditing(null);
 
-  // ✅ Send to backend
-  const data = new FormData();
-  Object.keys(form).forEach(key => data.append(key, form[key]));
-  if (editing) data.append("id", editing);
+    // ✅ Send to backend
+    const data = new FormData();
+    Object.keys(form).forEach((key) => data.append(key, form[key]));
+    if (editing) data.append("id", editing);
 
-  try {
-    const res = await fetch(
-      isEditing
-        ? "https://mimi-luxe.free.nf/update-product.php"
-        : "https://mimi-luxe.free.nf/add-product.php",
-      { method: "POST", body: data }
-    );
-    const result = await res.json();
+    try {
+      const res = await fetch(
+        isEditing
+          ? "https://mimi-luxe.free.nf/update-product.php"
+          : "https://mimi-luxe.free.nf/add-product.php",
+        { method: "POST", body: data }
+      );
+      const result = await res.json();
 
-    // ✅ Replace optimistic product with real data from backend
-    if (result.success) {
-      setProducts(prev =>
-        prev.map(p =>
-          p.id === optimisticProduct.id ? result.product : p
+      // ✅ Replace optimistic product with real data from backend
+      if (result.success) {
+        setProducts((prev) =>
+          prev.map((p) => (p.id === optimisticProduct.id ? result.product : p))
+        );
+
+        // Revoke temporary image blob if used
+        if (optimisticProduct.image?.startsWith("blob:")) {
+          URL.revokeObjectURL(optimisticProduct.image);
+        }
+      }
+    } catch (err) {
+      // ❌ Rollback on error
+      setProducts((prev) =>
+        prev.map((p) =>
+          p.id === optimisticProduct.id
+            ? products.find((pp) => pp.id === p.id)
+            : p
         )
       );
-
-      // Revoke temporary image blob if used
-      if (optimisticProduct.image?.startsWith("blob:")) {
-        URL.revokeObjectURL(optimisticProduct.image);
-      }
+      alert("Something went wrong. Try again.");
     }
-  } catch (err) {
-    // ❌ Rollback on error
-    setProducts(prev => prev.map(p =>
-      p.id === optimisticProduct.id ? products.find(pp => pp.id === p.id) : p
-    ));
-    alert("Something went wrong. Try again.");
-  }
 
-  // Reset form
-  setForm({
-    name: "",
-    price: "",
-    category: "",
-    description: "",
-    image: null,
-  });
-};
-
-
-const logout = async () => {
-  // 1. Call logout API
-  try {
-    await fetch("https://mimi-luxe.free.nf/logout.php", {
-      method: "POST",
-      credentials: "include"
+    // Reset form
+    setForm({
+      name: "",
+      price: "",
+      category: "",
+      description: "",
+      image: null,
     });
-  } catch (error) {
-    console.log("Logout API error:", error);
-  }
-  
-  window.location.href = "/MIMILUXE/";
-  
-};
+  };
+
+  const logout = async () => {
+    // 1. Call logout API
+    try {
+      await fetch("https://mimi-luxe.free.nf/get-products.php")
+    } catch (error) {
+      console.log("Logout API error:", error);
+    }
+
+    window.location.href = "/MIMILUXE/";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 px-8 py-10">
@@ -297,38 +294,52 @@ const logout = async () => {
                 className="w-full p-3 border rounded-lg focus:outline-pink-700"
               />
 
-<div className="relative">
-  <input
-    type="file"
-    name="image"
-    accept="image/*"
-    className="hidden"
-    id="file-upload"
-    onChange={handleChange}
-  />
-  
-  <label
-    htmlFor="file-upload"
-    className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-pink-300 rounded-lg cursor-pointer bg-pink-50 hover:bg-pink-100 transition-colors"
-  >
-    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-      <svg className="w-8 h-8 mb-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-      </svg>
-      <p className="mb-2 text-sm text-pink-700">
-        <span className="font-semibold">Click to upload</span> or drag and drop
-      </p>
-      <p className="text-xs text-pink-500">PNG, JPG, GIF up to 5MB</p>
-    </div>
-  </label>
-  
-  {/* Show selected file name */}
-  {form.image && (
-    <div className="mt-2 text-sm text-gray-600">
-      Selected: {form.image.name}
-    </div>
-  )}
-</div>
+              <div className="relative">
+                <input
+                  type="file"
+                  name="image"
+                  accept="image/*"
+                  className="hidden"
+                  id="file-upload"
+                  onChange={handleChange}
+                />
+
+                <label
+                  htmlFor="file-upload"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-pink-300 rounded-lg cursor-pointer bg-pink-50 hover:bg-pink-100 transition-colors"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg
+                      className="w-8 h-8 mb-4 text-pink-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                      ></path>
+                    </svg>
+                    <p className="mb-2 text-sm text-pink-700">
+                      <span className="font-semibold">Click to upload</span> or
+                      drag and drop
+                    </p>
+                    <p className="text-xs text-pink-500">
+                      PNG, JPG, GIF up to 5MB
+                    </p>
+                  </div>
+                </label>
+
+                {/* Show selected file name */}
+                {form.image && (
+                  <div className="mt-2 text-sm text-gray-600">
+                    Selected: {form.image.name}
+                  </div>
+                )}
+              </div>
 
               <button
                 type="submit"
