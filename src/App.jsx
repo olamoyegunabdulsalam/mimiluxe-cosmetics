@@ -31,28 +31,23 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState(null); // Add error state
 
-  const fetchProducts = async () => {
+const fetchProducts = async () => {
   try {
-    const res = await fetch("/api/products");
-    
-    if (!res.ok) {
-      throw new Error(`HTTP error! status: \${res.status}`);
-    }
-    
-    const data = await res.json();
-    
-    // Make sure data is an array
-    if (!Array.isArray(data)) {
-      console.error("API did not return array:", data);
-      throw new Error("Invalid data format from API");
-    }
-    
-    setProducts(data);
+const res = await fetch("/api/get-products");
+const data = await res.json();
+console.log(data);
+
+    // Filter out empty/invalid products
+    const cleanProducts = data.filter(
+      (p) => p.name && p.image && Number(p.price) > 0
+    );
+
+    setProducts(cleanProducts);
     setError(null);
   } catch (err) {
     console.error("Failed to fetch products:", err);
-    
-    // Use fallback data
+
+    // Fallback demo products
     const fallbackData = [
       {
         id: "8",
@@ -60,7 +55,7 @@ function App() {
         category: "gloss",
         price: "5000.00",
         description: "Playful bubblegum pink gloss with a chocolate twist",
-        image: "https://mimi-luxe.free.nf/images/combo-1.jpeg"
+        image: "https://mimi-luxe.free.nf/images/combo-1.jpeg",
       },
       {
         id: "7",
@@ -68,38 +63,16 @@ function App() {
         category: "gloss",
         price: "5000.00",
         description: "Bold hot pink gloss blended with chocolate",
-        image: "https://mimi-luxe.free.nf/images/combo-2.jpeg"
-      }
+        image: "https://mimi-luxe.free.nf/images/combo-2.jpeg",
+      },
     ];
-    
+
     setProducts(fallbackData);
     setError("Using demo products. Real products will load when available.");
   }
 };
 
-      const data = JSON.parse(text);
-      setProducts(data);
-      setError(null);
-    } catch (err) {
-      console.error("API failed:", err);
 
-      // Fallback to direct InfinityFree PHP (if accessible)
-      try {
-        const proxy = "https://corsproxy.io/?";
-        const res2 = await fetch(
-          `${proxy}${encodeURIComponent(
-            "https://mimi-luxe.free.nf/get-products.json"
-          )}`
-        );
-        const data2 = await res2.json();
-        setProducts(data2);
-        setError("Using PHP API fallback");
-      } catch (err2) {
-        console.error("Fallback also failed");
-        setError("Products temporarily unavailable");
-      }
-    }
-  };
 
   const refreshProducts = () => fetchProducts();
 
