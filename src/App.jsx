@@ -32,17 +32,50 @@ function App() {
   const [error, setError] = useState(null); // Add error state
 
   const fetchProducts = async () => {
-    try {
-      // Try Vercel API
-      const res = await fetch("/api/products");
-      const text = await res.text();
-
-      console.log("API response:", text.substring(0, 200));
-
-      // Check if we got source code instead of JSON
-      if (text.includes("import ") || text.includes("module.exports")) {
-        throw new Error("Got source code instead of API response");
+  try {
+    const res = await fetch("/api/products");
+    
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: \${res.status}`);
+    }
+    
+    const data = await res.json();
+    
+    // Make sure data is an array
+    if (!Array.isArray(data)) {
+      console.error("API did not return array:", data);
+      throw new Error("Invalid data format from API");
+    }
+    
+    setProducts(data);
+    setError(null);
+  } catch (err) {
+    console.error("Failed to fetch products:", err);
+    
+    // Use fallback data
+    const fallbackData = [
+      {
+        id: "8",
+        name: "Choco + Bubblegum Lip Gloss",
+        category: "gloss",
+        price: "5000.00",
+        description: "Playful bubblegum pink gloss with a chocolate twist",
+        image: "https://mimi-luxe.free.nf/images/combo-1.jpeg"
+      },
+      {
+        id: "7",
+        name: "Choco + Hot Pink Lip Gloss",
+        category: "gloss",
+        price: "5000.00",
+        description: "Bold hot pink gloss blended with chocolate",
+        image: "https://mimi-luxe.free.nf/images/combo-2.jpeg"
       }
+    ];
+    
+    setProducts(fallbackData);
+    setError("Using demo products. Real products will load when available.");
+  }
+};
 
       const data = JSON.parse(text);
       setProducts(data);
@@ -185,4 +218,5 @@ function App() {
 }
 
 export default App;
+
 

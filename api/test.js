@@ -1,5 +1,9 @@
-// api/test.js - CommonJS
+// api/test.js
 module.exports = async (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.json({ message: 'API test working', timestamp: new Date().toISOString() });
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.json({ 
+    status: "working", 
+    message: "API is functioning correctly",
+    timestamp: new Date().toISOString()
+  });
 };
