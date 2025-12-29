@@ -33,19 +33,38 @@ function App() {
 
   const fetchProducts = async () => {
     try {
+      // Try Vercel API
       const res = await fetch("/api/products");
-
-      // Check what we're getting
       const text = await res.text();
-      console.log("API Response (first 500 chars):", text.substring(0, 500));
 
-      // Try to parse as JSON
+      console.log("API response:", text.substring(0, 200));
+
+      // Check if we got source code instead of JSON
+      if (text.includes("import ") || text.includes("module.exports")) {
+        throw new Error("Got source code instead of API response");
+      }
+
       const data = JSON.parse(text);
       setProducts(data);
-      setError(null); // Clear error on success
+      setError(null);
     } catch (err) {
-      console.error("Failed to fetch products", err);
-      setError("Unable to load products. Please try again later.");
+      console.error("API failed:", err);
+
+      // Fallback to direct InfinityFree PHP (if accessible)
+      try {
+        const proxy = "https://corsproxy.io/?";
+        const res2 = await fetch(
+          `${proxy}${encodeURIComponent(
+            "https://mimi-luxe.free.nf/get-products.json"
+          )}`
+        );
+        const data2 = await res2.json();
+        setProducts(data2);
+        setError("Using PHP API fallback");
+      } catch (err2) {
+        console.error("Fallback also failed");
+        setError("Products temporarily unavailable");
+      }
     }
   };
 

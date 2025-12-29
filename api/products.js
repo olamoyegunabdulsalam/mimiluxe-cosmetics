@@ -1,6 +1,4 @@
-// api/products.js - CommonJS
-const mysql = require("mysql2/promise");
-
+// api/products.js - Works without InfinityFree MySQL
 module.exports = async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -10,45 +8,69 @@ module.exports = async (req, res) => {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   
   try {
-    console.log("Connecting to DB...");
+    // Try to fetch from your PHP API first
+    console.log("Trying PHP API...");
     
-    const connection = await mysql.createConnection({
-      host: process.env.DB_HOST || "sql102.infinityfree.com",
-      user: process.env.DB_USER || "if0_40782407",
-      password: process.env.DB_PASSWORD || "MariamTanimomo",
-      database: process.env.DB_NAME || "if0_40782407_mimiluxe",
-      port: process.env.DB_PORT || 3306,
+    // Use node-fetch if needed, or try different approach
+    const https = require("https");
+    
+    const data = await new Promise((resolve, reject) => {
+      https.get("https://mimi-luxe.free.nf/get-products.json", (resp) => {
+        let data = "";
+        resp.on("data", chunk => data += chunk);
+        resp.on("end", () => {
+          try {
+            if (data.includes("<html>")) {
+              reject(new Error("Hosting blocked PHP API"));
+            } else {
+              resolve(JSON.parse(data));
+            }
+          } catch (e) {
+            reject(e);
+          }
+        });
+      }).on("error", reject);
     });
-
-    const [rows] = await connection.execute("SELECT * FROM products");
-    await connection.end();
     
-    console.log("Fetched", rows.length, "products");
+    res.json(data);
     
-    const products = rows.map(p => ({
-      ...p,
-      image: p.image 
-        ? \`https://mimi-luxe.free.nf/images/\${p.image.split("/").pop()}\`
-        : ""
-    }));
+  } catch (phpError) {
+    console.error("PHP API failed:", phpError.message);
     
-    res.status(200).json(products);
-    
-  } catch (error) {
-    console.error("Database error:", error.message);
-    
-    // Fallback
-    const fallback = [
+    // Return hardcoded data
+    const products = [
       {
         id: "8",
         name: "Choco + Bubblegum Lip Gloss",
         category: "gloss",
         price: "5000.00",
-        description: "Playful bubblegum pink gloss with a chocolate twist",
-        image: "https://mimi-luxe.free.nf/images/combo-1.jpeg"
+        description: "Playful bubblegum pink gloss with a chocolate twist for soft glam and sweet shine",
+        image: "https://mimi-luxe.free.nf/images/combo-1.jpeg",
+        created_at: "2025-12-27 05:28:24",
+        updated_at: "2025-12-28 13:13:40"
+      },
+      {
+        id: "7",
+        name: "Choco + Hot Pink Lip Gloss",
+        category: "gloss",
+        price: "5000.00",
+        description: "Bold hot pink gloss blended with chocolate for statement shine and confident beauty",
+        image: "https://mimi-luxe.free.nf/images/combo-2.jpeg",
+        created_at: "2025-12-27 05:28:24",
+        updated_at: "2025-12-28 13:13:40"
+      },
+      {
+        id: "1",
+        name: "Lip Oil",
+        category: "oil",
+        price: "1500.00",
+        description: "A nourishing lip oil that hydrates deeply while giving your lips a natural, glossy shine",
+        image: "https://mimi-luxe.free.nf/images/lip-oil.jpeg",
+        created_at: "2025-12-27 05:28:24",
+        updated_at: "2025-12-28 13:13:40"
       }
     ];
     
-    res.status(200).json(fallback);
+    res.json(products);
   }
 };
