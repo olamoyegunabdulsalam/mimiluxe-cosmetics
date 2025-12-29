@@ -35,7 +35,6 @@ const fetchProducts = async () => {
   try {
 const res = await fetch("/api/get-products");
 const data = await res.json();
-console.log(data);
 
     // Filter out empty/invalid products
     const cleanProducts = data.filter(
