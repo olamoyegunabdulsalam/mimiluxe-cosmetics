@@ -1,0 +1,5 @@
+DB_HOST=sql102.infinityfree.com
+DB_USER=if0_40782407
+DB_PASSWORD=MariamTanimomo
+DB_NAME=if0_40782407_mimiluxe
+DB_PORT=3306

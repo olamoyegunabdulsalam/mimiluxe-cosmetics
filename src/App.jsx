@@ -29,28 +29,38 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const refreshProducts = () => fetchProducts();
+  const [error, setError] = useState(null); // Add error state
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("https://mimi-luxe.free.nf/get-products.php");
-      const data = await res.json();
-      setProducts(data); 
+      const res = await fetch("/api/products");
+
+      // Check what we're getting
+      const text = await res.text();
+      console.log("API Response (first 500 chars):", text.substring(0, 500));
+
+      // Try to parse as JSON
+      const data = JSON.parse(text);
+      setProducts(data);
+      setError(null); // Clear error on success
     } catch (err) {
       console.error("Failed to fetch products", err);
+      setError("Unable to load products. Please try again later.");
     }
   };
 
+  const refreshProducts = () => fetchProducts();
+
   useEffect(() => {
-    fetchProducts(); 
+    console.log("Current origin:", window.location.origin);
+    fetchProducts();
 
     const interval = setInterval(() => {
-      fetchProducts(); 
+      fetchProducts();
     }, 10000);
 
     return () => clearInterval(interval);
   }, []);
-
 
   // Filter products
   useEffect(() => {
@@ -93,7 +103,7 @@ function App() {
 
     const message = productName
       ? `Hello, I'm interested in the ${productName}. Is it still available?`
-      : `Hello, I’d like to enquire about your lip gloss products.`;
+      : `Hello, I'd like to enquire about your lip gloss products.`;
 
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
       message
@@ -119,6 +129,13 @@ function App() {
               searchTerm={searchTerm}
               onSearchChange={setSearchTerm}
             />
+
+            {/* Display error if any */}
+            {error && (
+              <div className="max-w-7xl mx-auto px-4 py-3 bg-yellow-50 text-yellow-800 rounded-lg my-4">
+                {error}
+              </div>
+            )}
 
             <Products
               products={filteredProducts}
@@ -149,3 +166,4 @@ function App() {
 }
 
 export default App;
+
