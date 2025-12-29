@@ -29,21 +29,28 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const refreshProducts = () => fetchProducts();
 
-const fetchProducts = async () => {
-  try {
-    const res = await fetch("https://mimi-luxe.free.nf/get-products.php");
-    const data = await res.json();
-    setProducts(data); // This will populate the products state
-  } catch (err) {
-    console.error("Failed to fetch products", err);
-  }
-};
-
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch("https://mimi-luxe.free.nf/get-products.php");
+      const data = await res.json();
+      setProducts(data); 
+    } catch (err) {
+      console.error("Failed to fetch products", err);
+    }
+  };
 
   useEffect(() => {
-    fetchProducts();
+    fetchProducts(); 
+
+    const interval = setInterval(() => {
+      fetchProducts(); 
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, []);
+
 
   // Filter products
   useEffect(() => {

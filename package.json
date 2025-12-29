@@ -2,7 +2,7 @@
   "name": "mimiluxe",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://olamoyegunabdulsalam.github.io/MIMILUXE",
+  "homepage": "https://olamoyegunabdulsalam.github.io/mimiluxe-cosmetics",
   "type": "module",
   "scripts": {
     "dev": "vite",
