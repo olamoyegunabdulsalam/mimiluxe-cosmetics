@@ -35,31 +35,34 @@ export default function Dashboard() {
     setProducts(data);
   };
 
-  // Check admin auth
   useEffect(() => {
-    const checkAuth = async () => {
-      const user = supabase.auth.user();
-      if (!user) {
+    const checkAuthAndFetch = async () => {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (!data?.user) {
         window.location.href = "/admin";
-      } else {
-        await fetchProducts();
+        return;
       }
+
+      // ✅ user exists → fetch products
+      await fetchProducts();
     };
-    checkAuth();
+
+    checkAuthAndFetch();
   }, []);
+
 
 const uploadImage = async (file) => {
   const fileName = `${Date.now()}-${file.name}`; 
   const { data, error } = await supabase.storage
     .from("products") 
-    .upload(fileName, file);
+    .upload(`products/${fileName}`, file)
 
   if (error) throw error;
 
-  const { publicUrl, error: urlError } = supabase
-    .storage
+  const { publicUrl, error: urlError } = supabase.storage
     .from("products")
-    .getPublicUrl(fileName);
+    .getPublicUrl(`products/${fileName}`);
 
   if (urlError) throw urlError;
 
@@ -87,6 +90,7 @@ const uploadImage = async (file) => {
        if (error) throw error;
      }
 
+     showToast(editing ? "Product updated" : "Product added");
      await refresh();
    } catch (err) {
      console.error(err);
