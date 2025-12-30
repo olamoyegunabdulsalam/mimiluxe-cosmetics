@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase"; // your supabase client
+import { supabase } from "../../lib/supabase";
 import ProductTable from "./ProductTable";
 import Toast from "./Toast";
 
@@ -112,7 +112,7 @@ export default function Dashboard() {
 
     showToast("Product deleted successfully");
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50 px-8 py-10">
       <Toast
