@@ -47,54 +47,54 @@ export default function Dashboard() {
     checkAuth();
   }, []);
 
-  // Upload image
-  const uploadImage = async (file) => {
-    const fileName = `products/images/${Date.now()}-${file.name}`;
-    const { error } = await supabase.storage
-      .from("products")
-      .upload(fileName, file);
-    if (error) throw error;
+const uploadImage = async (file) => {
+  const fileName = `${Date.now()}-${file.name}`; 
+  const { data, error } = await supabase.storage
+    .from("products") 
+    .upload(fileName, file);
 
-    const { publicURL } = supabase.storage.from("products").getPublicUrl(fileName);
-    return publicURL;
-  };
+  if (error) throw error;
 
-  // Add / Update Product
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      let imageUrl = form.image?.name ? await uploadImage(form.image) : editing?.image || null;
+  const { publicUrl, error: urlError } = supabase
+    .storage
+    .from("products")
+    .getPublicUrl(fileName);
 
-      const payload = {
-        name: form.name,
-        price: form.price,
-        category: form.category,
-        description: form.description,
-        image: imageUrl,
-      };
+  if (urlError) throw urlError;
 
-      if (editing) {
-        const { error } = await supabase
-          .from("products")
-          .update(payload)
-          .eq("id", editing.id);
-        if (error) throw error;
-        showToast("Product updated successfully");
-      } else {
-        const { error } = await supabase.from("products").insert([payload]);
-        if (error) throw error;
-        showToast("Product added successfully");
-      }
+  return publicUrl;
+};
 
-      setForm({ name: "", price: "", category: "", description: "", image: null });
-      setEditing(null);
-      setOpen(false);
-      fetchProducts();
-    } catch (err) {
-      console.error(err);
-      showToast(err.message || "Something went wrong", "error");
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    let imageUrl = form.image ? await uploadImage(form.image) : editing?.image || null;
+
+    const payload = {
+      ...form,
+      image: imageUrl
+    };
+
+    if (editing) {
+      const { error } = await supabase
+        .from("products")
+        .update(payload)
+        .eq("id", editing.id);
+      if (error) throw error;
+    } else {
+      const { error } = await supabase.from("products").insert([payload]);
+      if (error) throw error;
     }
-  };
+
+    refresh();
+    close();
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+};
+
 
   // Delete Product
   const handleDelete = async (id) => {
