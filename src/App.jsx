@@ -33,45 +33,19 @@ function App() {
 
 const fetchProducts = async () => {
   try {
-    const res = await fetch("/api/get-products"); // change to "/api/products" if that's your endpoint
+    const res = await fetch("/api/get-products"); // changed from "/api/products"
     const text = await res.text();
     console.log("API status:", res.status, res.statusText);
     console.log("API Response (first 500 chars):", text.substring(0, 500));
-
     if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (parseErr) {
-      throw new Error("Response is not valid JSON");
-    }
-
+    const data = JSON.parse(text);
     if (!Array.isArray(data)) throw new Error("Expected products array");
     setProducts(data);
     setError(null);
   } catch (err) {
     console.error("Failed to fetch products:", err);
     setError("Unable to load products. Please try again later.");
-    // optional demo fallback
-    setProducts([
-      {
-        id: "8",
-        name: "Choco + Bubblegum Lip Gloss",
-        category: "gloss",
-        price: "5000.00",
-        description: "Playful bubblegum pink gloss with a chocolate twist",
-        image: "https://mimi-luxe.free.nf/images/combo-1.jpeg",
-      },
-      {
-        id: "7",
-        name: "Choco + Hot Pink Lip Gloss",
-        category: "gloss",
-        price: "5000.00",
-        description: "Bold hot pink gloss blended with chocolate",
-        image: "https://mimi-luxe.free.nf/images/combo-2.jpeg",
-      },
-    ]);
+    setProducts([]);
   }
 };
 
