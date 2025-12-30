@@ -24,13 +24,10 @@ export default function ProductForm({ close, refresh, editing }) {
     const formData = new FormData();
     formData.append("file", file);
 
-const res = await fetch(
-  "https://mimiluxe-cosmetics.vercel.app/api/upload-image",
-  {
-    method: "POST",
-    body: formData,
-  }
-);
+const res = await fetch("/api/upload-image", {
+  method: "POST",
+  body: formData,
+});
 
 
     const data = await res.json();

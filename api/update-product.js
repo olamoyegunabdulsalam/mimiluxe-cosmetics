@@ -5,9 +5,9 @@ export default async function handler(req, res) {
     const admin = requireAuth(req, res);
     if (!admin) return;
 
-    if (req.method !== "PUT") {
-        return res.status(405).json({ error: "Method not allowed" });
-    }
+if (req.method !== "POST") {  // Change from PUT to POST
+    return res.status(405).json({ error: "Method not allowed" });
+}
 
     const { id, name, price, category, description, image } = req.body;
 

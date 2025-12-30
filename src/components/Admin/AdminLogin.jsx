@@ -12,7 +12,7 @@ const handleSubmit = async (e) => {
   formData.append("password", password);
 
   try {
-    const res = await fetch("https://mimi-luxe.free.nf/login.php", {
+    const res = await fetch("/api/login", {
       method: "POST",
       body: formData,
     });

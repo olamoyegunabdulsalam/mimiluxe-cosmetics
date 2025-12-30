@@ -56,7 +56,10 @@ export const Products = ({ products, onProductClick }) => (
               <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 line-clamp-2">
                 {product.description || "No description available."}
               </p>
-              <button className="mt-auto bg-gradient-to-r from-green-500 to-green-600 text-white py-2 sm:py-3 rounded-lg font-medium text-sm sm:text-base flex items-center justify-center">
+              <button
+                onClick={() => onProductClick(product)}
+                className="mt-auto bg-gradient-to-r from-green-500 to-green-600 text-white py-2 sm:py-3 rounded-lg font-medium text-sm sm:text-base flex items-center justify-center"
+              >
                 <ShoppingBag className="w-4 h-4 mr-2" />
                 Order Now
               </button>
