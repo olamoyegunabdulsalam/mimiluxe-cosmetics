@@ -38,21 +38,32 @@ export default function Dashboard() {
     setProducts(data);
   };
 
-  useEffect(() => {
-    const checkAuthAndFetch = async () => {
-      const { data, error } = await supabase.auth.getUser();
+  const checkAdmin = async () => {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+    if (error) {
+      console.error("Error fetching user:", error);
+      window.location.href = "/admin";
+      return null;
+    }
 
-      if (!data?.user) {
-        window.location.href = "/admin";
-        return;
-      }
+    if (!user || user.email !== "admin@mimiluxe.com") {
+      window.location.href = "/admin";
+      return null;
+    }
 
-      // ✅ user exists → fetch products
-      await fetchProducts();
-    };
+    return user; // admin user
+  };
 
-    checkAuthAndFetch();
-  }, []);
+ useEffect(() => {
+   const init = async () => {
+     const user = await checkAdmin();
+     if (user) await fetchProducts();
+   };
+   init();
+ }, []);
 
 
 const uploadImage = async (file) => {
@@ -76,25 +87,32 @@ const uploadImage = async (file) => {
  const handleSubmit = async (e) => {
    e.preventDefault();
    setUploading(true);
+
    try {
+     const user = await checkAdmin();
+     if (!user) return; // redirect already handled in checkAdmin
+
      let imageUrl = form.image
        ? await uploadImage(form.image)
        : editing?.image || null;
+
      const payload = { ...form, image: imageUrl };
 
      if (editing) {
+       // UPDATE
        const { error } = await supabase
          .from("products")
          .update(payload)
          .eq("id", editing.id);
        if (error) throw error;
      } else {
+       // INSERT
        const { error } = await supabase.from("products").insert([payload]);
        if (error) throw error;
      }
 
-     showToast(editing ? "Product updated" : "Product added");
      await refresh();
+     showToast(editing ? "Product updated" : "Product added");
    } catch (err) {
      console.error(err);
      alert(err.message);
