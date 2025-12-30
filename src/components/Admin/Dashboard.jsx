@@ -8,7 +8,10 @@ export default function Dashboard() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [ toast, setToast ] = useState({ message: "", type: "" });
-   const [uploading, setUploading] = useState(false);
+  const [ uploading, setUploading ] = useState(false);
+  const [ preview, setPreview ] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
+
 
   const [form, setForm] = useState({
     name: "",
@@ -119,29 +122,18 @@ const refresh = async () => {
   });
 };
 
-  const openEdit = (product) => {
-    setEditing(product);
-    setForm({ ...product, image: null }); // keep current image URL
-    setOpen(true);
-  };
+const openEdit = (product) => {
+  setEditing(product);
+  setForm({ ...product, image: null });
+  setPreview(product.image); // show existing image
+  setOpen(true);
+};
 
   
   // Delete Product
-  const handleDelete = async (id) => {
-    if (!window.confirm("Delete this product?")) return;
-
-    const previous = products;
-    setProducts((prev) => prev.filter((p) => p.id !== id));
-
-    const { error } = await supabase.from("products").delete().eq("id", id);
-    if (error) {
-      setProducts(previous);
-      showToast("Delete failed", "error");
-      return;
-    }
-
-    showToast("Product deleted successfully");
-  };
+const handleDelete = (id) => {
+  setDeleteId(id);
+};
 
   return (
     <div className="min-h-screen bg-gray-50 px-8 py-10">
@@ -168,6 +160,7 @@ const refresh = async () => {
                 description: "",
                 image: null,
               });
+              setPreview(null);
               setEditing(null);
               setOpen(true);
             }}
@@ -226,9 +219,117 @@ const refresh = async () => {
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Your form inputs (name, price, category, description, image) unchanged */}
-              {/* ... same as your original code */}
+              <input
+                type="text"
+                placeholder="Product name"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                required
+                className="w-full border p-3 rounded"
+              />
+
+              <input
+                type="number"
+                placeholder="Price"
+                value={form.price}
+                onChange={(e) => setForm({ ...form, price: e.target.value })}
+                required
+                className="w-full border p-3 rounded"
+              />
+
+              <select
+                value={form.category}
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                required
+                className="w-full border p-3 rounded"
+              >
+                <option value="">Select category</option>
+                <option value="oil">Oil</option>
+                <option value="masks">Masks</option>
+                <option value="gloss">Gloss</option>
+              </select>
+
+              <textarea
+                placeholder="Description"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+                required
+                className="w-full border p-3 rounded"
+              />
+
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  setForm({ ...form, image: file });
+                  if (file) {
+                    setPreview(URL.createObjectURL(file));
+                  }
+                }}
+              />
+              {preview && (
+                <img
+                  src={preview}
+                  alt="Preview"
+                  className="w-32 h-32 object-cover rounded-lg border mt-3"
+                />
+              )}
+
+              <button
+                type="submit"
+                disabled={uploading}
+                className="w-full bg-pink-600 text-white py-3 rounded disabled:opacity-50"
+              >
+                {uploading
+                  ? "Saving..."
+                  : editing
+                  ? "Update Product"
+                  : "Add Product"}
+              </button>
             </form>
+          </div>
+        </div>
+      )}
+      {deleteId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+            <h3 className="text-lg font-semibold mb-2">Delete product?</h3>
+            <p className="text-gray-600 mb-6">This action cannot be undone.</p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setDeleteId(null)}
+                className="px-4 py-2 rounded border"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={async () => {
+                  const { error } = await supabase
+                    .from("products")
+                    .delete()
+                    .eq("id", deleteId);
+
+                  if (!error) {
+                    setProducts((prev) =>
+                      prev.filter((p) => p.id !== deleteId)
+                    );
+                    showToast("Product deleted");
+                  } else {
+                    showToast("Delete failed", "error");
+                  }
+
+                  setDeleteId(null);
+                }}
+                className="bg-red-600 text-white px-4 py-2 rounded"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

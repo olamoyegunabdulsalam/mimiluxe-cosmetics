@@ -46,13 +46,13 @@ export default function ProductTable({ products, onEdit, onDelete }) {
               <td className="p-3 space-x-3">
                 <button
                   onClick={() => onEdit(p)}
-                  className="text-blue-600 hover:underline"
+                  className=" text-white bg-blue-600 hover:underline"
                 >
                   Edit
                 </button>
                 <button
                   onClick={() => onDelete(p.id)}
-                  className="text-red-600 hover:underline"
+                  className="text-white bg-red-600 hover:underline"
                 >
                   Delete
                 </button>
