@@ -18,8 +18,6 @@ export default function Dashboard() {
 
   const categories = ["oil", "masks", "gloss"];
 
-  const tempId = () => "temp-" + Math.random().toString(36).slice(2);
-
   const showToast = (message, type = "success") => {
     setToast({ message, type });
     setTimeout(() => setToast({ message: "", type: "" }), 3000);
@@ -27,8 +25,13 @@ export default function Dashboard() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch("https://mimi-luxe.free.nf/get-products.php");
+      const res = await fetch("/api/get-products");
       const data = await res.json();
+
+      if (!Array.isArray(data)) {
+        throw new Error("Invalid response");
+      }
+
       setProducts(data);
     } catch {
       showToast("Failed to load products", "error");
@@ -36,7 +39,15 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    fetchProducts();
+    fetch("/api/check-auth")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.authenticated) {
+          window.location.href = "/admin";
+        } else {
+          fetchProducts();
+        }
+      });
   }, []);
 
   const handleChange = (e) => {
@@ -68,9 +79,10 @@ export default function Dashboard() {
     setProducts((prev) => prev.filter((p) => p.id !== id));
 
     try {
-      const res = await fetch(
-        `https://mimi-luxe.free.nf/delete-product.php?id=${id}`
-      );
+      const res = await fetch(`/api/delete-product?id=${id}`, {
+        method: "DELETE",
+      });
+
       const result = await res.json();
       if (!result.success) {
         throw new Error("Delete failed");
@@ -82,73 +94,82 @@ export default function Dashboard() {
     }
   };
 
+  // Keep this one uploadImage function only
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch("/api/upload-image", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    return data.url; // Supabase public URL
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const isEditing = Boolean(editing);
 
-    // ✅ Create optimistic product
-    const optimisticProduct = {
-      id: editing || "temp-" + Math.random().toString(36).slice(2),
-      name: form.name,
-      price: form.price,
-      category: form.category,
-      description: form.description,
-      image: form.image
-        ? URL.createObjectURL(form.image)
-        : products.find((p) => p.id === editing)?.image,
-    };
-
-    // ✅ Update the products state immediately
-    if (isEditing) {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === editing ? optimisticProduct : p))
-      );
-    } else {
-      setProducts((prev) => [optimisticProduct, ...prev]);
-    }
-
-    setOpen(false);
-    setEditing(null);
-
-    // ✅ Send to backend
-    const data = new FormData();
-    Object.keys(form).forEach((key) => data.append(key, form[key]));
-    if (editing) data.append("id", editing);
-
     try {
-      const res = await fetch(
-        isEditing
-          ? "https://mimi-luxe.free.nf/update-product.php"
-          : "https://mimi-luxe.free.nf/add-product.php",
-        { method: "POST", body: data }
-      );
-      const result = await res.json();
+      let imageUrl = null;
 
-      // ✅ Replace optimistic product with real data from backend
-      if (result.success) {
-        setProducts((prev) =>
-          prev.map((p) => (p.id === optimisticProduct.id ? result.product : p))
-        );
-
-        // Revoke temporary image blob if used
-        if (optimisticProduct.image?.startsWith("blob:")) {
-          URL.revokeObjectURL(optimisticProduct.image);
-        }
+      // Upload image first if it exists
+      if (form.image) {
+        imageUrl = await uploadImage(form.image);
       }
-    } catch (err) {
-      // ❌ Rollback on error
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === optimisticProduct.id
-            ? products.find((pp) => pp.id === p.id)
-            : p
-        )
+
+      // Payload for API
+      const payload = {
+        name: form.name,
+        price: form.price,
+        category: form.category,
+        description: form.description,
+        image: imageUrl,
+        ...(isEditing && { id: editing }),
+      };
+
+      // Optimistic UI
+      const tempId = editing || `temp-${Date.now()}`;
+      const optimisticProduct = { id: tempId, ...payload };
+
+      if (isEditing) {
+        setProducts((prev) =>
+          prev.map((p) => (p.id === editing ? optimisticProduct : p))
+        );
+      } else {
+        setProducts((prev) => [optimisticProduct, ...prev]);
+      }
+
+      setOpen(false);
+      setEditing(null);
+
+      // API request
+      const res = await fetch(
+        isEditing ? "/api/update-product" : "/api/add-product",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
       );
-      alert("Something went wrong. Try again.");
+
+      const result = await res.json();
+      if (!result.success) throw new Error();
+
+      // Replace temp product with real one from API
+      setProducts((prev) =>
+        prev.map((p) => (p.id === tempId ? result.product : p))
+      );
+
+      showToast("Saved successfully");
+    } catch (err) {
+      showToast("Something went wrong", "error");
+      fetchProducts(); // rollback
     }
 
-    // Reset form
     setForm({
       name: "",
       price: "",
@@ -159,14 +180,8 @@ export default function Dashboard() {
   };
 
   const logout = async () => {
-    // 1. Call logout API
-    try {
-      await fetch("https://mimi-luxe.free.nf/get-products.php")
-    } catch (error) {
-      console.log("Logout API error:", error);
-    }
-
-    window.location.href = "/MIMILUXE/";
+    await fetch("/api/logout");
+    window.location.href = "/admin";
   };
 
   return (
@@ -252,6 +267,7 @@ export default function Dashboard() {
             </h3>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Rest of your form inputs unchanged */}
               <input
                 name="name"
                 placeholder="Product name"
@@ -260,7 +276,6 @@ export default function Dashboard() {
                 className="w-full p-3 border rounded-lg focus:outline-pink-700"
                 required
               />
-
               <input
                 name="price"
                 type="number"
@@ -270,7 +285,6 @@ export default function Dashboard() {
                 className="w-full p-3 border rounded-lg focus:outline-pink-700"
                 required
               />
-
               <select
                 name="category"
                 value={form.category}
@@ -285,7 +299,6 @@ export default function Dashboard() {
                   </option>
                 ))}
               </select>
-
               <textarea
                 name="description"
                 placeholder="Description"
@@ -293,7 +306,6 @@ export default function Dashboard() {
                 onChange={handleChange}
                 className="w-full p-3 border rounded-lg focus:outline-pink-700"
               />
-
               <div className="relative">
                 <input
                   type="file"
@@ -303,7 +315,6 @@ export default function Dashboard() {
                   id="file-upload"
                   onChange={handleChange}
                 />
-
                 <label
                   htmlFor="file-upload"
                   className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-pink-300 rounded-lg cursor-pointer bg-pink-50 hover:bg-pink-100 transition-colors"
@@ -332,8 +343,6 @@ export default function Dashboard() {
                     </p>
                   </div>
                 </label>
-
-                {/* Show selected file name */}
                 {form.image && (
                   <div className="mt-2 text-sm text-gray-600">
                     Selected: {form.image.name}

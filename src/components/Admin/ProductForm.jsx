@@ -6,31 +6,80 @@ export default function ProductForm({ close, refresh, editing }) {
     price: "",
     category: "",
     description: "",
-    image: null,
+    image: null, // File object
   });
+
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (editing) {
-      setForm(editing);
+      setForm({
+        ...editing,
+        image: null, // Clear file input, keep URL in table
+      });
     }
   }, [editing]);
 
+  const uploadImage = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+const res = await fetch(
+  "https://mimiluxe-cosmetics.vercel.app/api/upload-image",
+  {
+    method: "POST",
+    body: formData,
+  }
+);
+
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "Upload failed");
+    return data.url; // Supabase public URL
+  };
+
   const submit = async (e) => {
     e.preventDefault();
+    setUploading(true);
 
-    const data = new FormData();
-    Object.keys(form).forEach((k) => data.append(k, form[k]));
-    if (editing) data.append("id", editing.id);
+    try {
+      let imageUrl = editing?.image || null; // Keep existing URL if no new file
 
-    await fetch(
-      editing
-        ? "https://mimi-luxe.free.nf/update-product.php"
-        : "https://mimi-luxe.free.nf/add-product.php",
-      { method: "POST", body: data }
-    );
+      // Upload new image if selected
+      if (form.image) {
+        imageUrl = await uploadImage(form.image);
+      }
 
-    close();
-    refresh();
+      const payload = {
+        ...form,
+        image: imageUrl,
+      };
+
+      if (editing) payload.id = editing.id;
+
+      const res = await fetch(
+        editing ? "/api/update-product" : "/api/add-product",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await res.json();
+
+      if (!res.ok || !result.success) {
+        throw new Error(result.error || "Failed to save product");
+      }
+
+      refresh(); // Refresh products table
+      close();
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -78,8 +127,12 @@ export default function ProductForm({ close, refresh, editing }) {
         />
 
         <div className="flex gap-2">
-          <button className="bg-pink-600 text-white w-full py-2 rounded">
-            Save
+          <button
+            type="submit"
+            disabled={uploading}
+            className="bg-pink-600 text-white w-full py-2 rounded"
+          >
+            {uploading ? "Saving..." : "Save"}
           </button>
           <button
             type="button"

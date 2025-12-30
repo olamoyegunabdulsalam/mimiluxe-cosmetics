@@ -1,7 +1,5 @@
 import React from "react";
 
-const IMAGE_BASE_URL = "https://mimi-luxe.free.nf/images/";
-
 export default function ProductTable({ products, onEdit, onDelete }) {
   if (!products || products.length === 0) {
     return (
@@ -29,7 +27,8 @@ export default function ProductTable({ products, onEdit, onDelete }) {
             <tr key={p.id} className="border-t align-middle">
               <td className="p-3">
                 {p.image ? (
-                  <img src={p.image}
+                  <img
+                    src={p.image} // Supabase public URL
                     alt={p.name}
                     className="w-16 h-16 object-cover rounded-lg border"
                   />
