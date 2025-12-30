@@ -1,39 +1,22 @@
-import fs from "fs";
-import path from "path";
-import pg from "pg";
+import { createClient } from "@supabase/supabase-js";
 
-const { Pool } = pg;
-
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: {
-    rejectUnauthorized: true,
-    ca: fs.readFileSync(
-      path.join(process.cwd(), "prod-ca-2021.crt")
-    ).toString(),
-  },
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
   try {
-    const { rows } = await pool.query(
-      "SELECT * FROM products ORDER BY id DESC"
-    );
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .order("id", { ascending: false });
 
-    return res.status(200).json(rows);
-  } catch (error) {
-    console.error("DB error:", error);
-    return res.status(500).json({
-      error: "Database connection failed",
-      message: error.message,
-    });
+    if (error) throw error;
+
+    res.status(200).json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Database connection failed", message: err.message });
   }
 }

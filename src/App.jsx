@@ -33,18 +33,18 @@ function App() {
 
 const fetchProducts = async () => {
   try {
-const res = await fetch("/api/get-products");
-const data = await res.json();
+    const res = await fetch("/api/get-products");
+    const data = await res.json();
 
-    // Filter out empty/invalid products
-    const cleanProducts = data.filter(
-      (p) => p.name && p.image && Number(p.price) > 0
-    );
+    if (!Array.isArray(data)) throw new Error(data.message || "Invalid response");
 
-    setProducts(cleanProducts);
-    setError(null);
+    setProducts(data);
   } catch (err) {
     console.error("Failed to fetch products:", err);
+    setProducts([]); // fallback to empty array
+  }
+
+
 
     // Fallback demo products
     const fallbackData = [
@@ -68,7 +68,6 @@ const data = await res.json();
 
     setProducts(fallbackData);
     setError("Using demo products. Real products will load when available.");
-  }
 };
 
 
