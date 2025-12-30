@@ -29,20 +29,32 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [error, setError] = useState(null);
 
 const fetchProducts = async () => {
   try {
-    const res = await fetch("/api/get-products");
-    const data = await res.json();
+    const res = await fetch("/api/get-products"); // change to "/api/products" if that's your endpoint
+    const text = await res.text();
+    console.log("API status:", res.status, res.statusText);
+    console.log("API Response (first 500 chars):", text.substring(0, 500));
 
-    if (!Array.isArray(data))
-      throw new Error(data.message || "Invalid response");
+    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (parseErr) {
+      throw new Error("Response is not valid JSON");
+    }
+
+    if (!Array.isArray(data)) throw new Error("Expected products array");
     setProducts(data);
     setError(null);
   } catch (err) {
     console.error("Failed to fetch products:", err);
-    // Only use fallback if API fails
-    const fallbackData = [
+    setError("Unable to load products. Please try again later.");
+    // optional demo fallback
+    setProducts([
       {
         id: "8",
         name: "Choco + Bubblegum Lip Gloss",
@@ -59,12 +71,9 @@ const fetchProducts = async () => {
         description: "Bold hot pink gloss blended with chocolate",
         image: "https://mimi-luxe.free.nf/images/combo-2.jpeg",
       },
-    ];
-    setProducts(fallbackData);
-    setError("Using demo products. Real products will load when available.");
+    ]);
   }
 };
-
 
 
   const refreshProducts = () => fetchProducts();
