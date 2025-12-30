@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase"; 
 
 export default function ProductForm({ close, refresh, editing }) {
   const [form, setForm] = useState({
@@ -24,11 +25,10 @@ export default function ProductForm({ close, refresh, editing }) {
     const formData = new FormData();
     formData.append("file", file);
 
-const res = await fetch("/api/upload-image", {
-  method: "POST",
-  body: formData,
-});
-
+    const res = await fetch("/api/upload-image", {
+      method: "POST",
+      body: formData,
+    });
 
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Upload failed");
@@ -37,45 +37,32 @@ const res = await fetch("/api/upload-image", {
 
   const submit = async (e) => {
     e.preventDefault();
-    setUploading(true);
-
     try {
-      let imageUrl = editing?.image || null; // Keep existing URL if no new file
-
-      // Upload new image if selected
-      if (form.image) {
-        imageUrl = await uploadImage(form.image);
-      }
+      let imageUrl = form.image
+        ? await uploadImage(form.image)
+        : editing?.image || null;
 
       const payload = {
         ...form,
         image: imageUrl,
       };
 
-      if (editing) payload.id = editing.id;
-
-      const res = await fetch(
-        editing ? "/api/update-product" : "/api/add-product",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const result = await res.json();
-
-      if (!res.ok || !result.success) {
-        throw new Error(result.error || "Failed to save product");
+      if (editing) {
+        const { error } = await supabase
+          .from("products")
+          .update(payload)
+          .eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("products").insert([payload]);
+        if (error) throw error;
       }
 
-      refresh(); // Refresh products table
+      refresh();
       close();
     } catch (err) {
       console.error(err);
       alert(err.message);
-    } finally {
-      setUploading(false);
     }
   };
 

@@ -1,4 +1,4 @@
-// App.jsx
+import { supabase } from "../lib/supabase";
 import React, { useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 
@@ -31,26 +31,25 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setError] = useState(null);
 
-const fetchProducts = async () => {
-  try {
-    const res = await fetch("/api/get-products"); // changed from "/api/products"
-    const text = await res.text();
-    console.log("API status:", res.status, res.statusText);
-    console.log("API Response (first 500 chars):", text.substring(0, 500));
-    if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    const data = JSON.parse(text);
-    if (!Array.isArray(data)) throw new Error("Expected products array");
-    setProducts(data);
-    setError(null);
-  } catch (err) {
-    console.error("Failed to fetch products:", err);
-    setError("Unable to load products. Please try again later.");
-    setProducts([]);
-  }
-};
+  const fetchProducts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("id", { ascending: false });
 
+      if (error) throw error;
 
-  const refreshProducts = () => fetchProducts();
+      if (!Array.isArray(data)) throw new Error("Expected products array");
+
+      setProducts(data);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+      setError("Unable to load products. Please try again later.");
+      setProducts([]);
+    }
+  };
 
   useEffect(() => {
     console.log("Current origin:", window.location.origin);
@@ -167,5 +166,3 @@ const fetchProducts = async () => {
 }
 
 export default App;
-
-

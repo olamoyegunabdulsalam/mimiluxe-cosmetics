@@ -1,22 +1,15 @@
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "./supabase";
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const fetchProducts = async () => {
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-export default async function handler(req, res) {
-  try {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .order("id", { ascending: false });
-
-    if (error) throw error;
-
-    res.status(200).json(data);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Database connection failed", message: err.message });
+  if (error) {
+    console.error(error);
+    return [];
   }
-}
+
+  return data;
+};
