@@ -21,19 +21,21 @@ export default function ProductForm({ close, refresh, editing }) {
     }
   }, [editing]);
 
-  const uploadImage = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
+const uploadImage = async (file) => {
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${Date.now()}.${fileExt}`;
 
-    const res = await fetch("/api/upload-image", {
-      method: "POST",
-      body: formData,
-    });
+  const { error } = await supabase.storage
+    .from("products") 
+    .upload(fileName, file);
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Upload failed");
-    return data.url; // Supabase public URL
-  };
+  if (error) throw error;
+
+  const { data } = supabase.storage.from("products").getPublicUrl(fileName);
+
+  return data.publicUrl;
+};
+
 
   const submit = async (e) => {
     e.preventDefault();
