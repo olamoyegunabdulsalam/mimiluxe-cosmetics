@@ -7,7 +7,8 @@ export default function Dashboard() {
   const [products, setProducts] = useState([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [toast, setToast] = useState({ message: "", type: "" });
+  const [ toast, setToast ] = useState({ message: "", type: "" });
+   const [uploading, setUploading] = useState(false);
 
   const [form, setForm] = useState({
     name: "",
@@ -65,37 +66,62 @@ const uploadImage = async (file) => {
   return publicUrl;
 };
 
+
  const handleSubmit = async (e) => {
-  e.preventDefault();
+   e.preventDefault();
+   setUploading(true);
+   try {
+     let imageUrl = form.image
+       ? await uploadImage(form.image)
+       : editing?.image || null;
+     const payload = { ...form, image: imageUrl };
 
-  try {
-    let imageUrl = form.image ? await uploadImage(form.image) : editing?.image || null;
+     if (editing) {
+       const { error } = await supabase
+         .from("products")
+         .update(payload)
+         .eq("id", editing.id);
+       if (error) throw error;
+     } else {
+       const { error } = await supabase.from("products").insert([payload]);
+       if (error) throw error;
+     }
 
-    const payload = {
-      ...form,
-      image: imageUrl
-    };
+     await refresh();
+   } catch (err) {
+     console.error(err);
+     alert(err.message);
+   } finally {
+     setUploading(false);
+   }
+ };
 
-    if (editing) {
-      const { error } = await supabase
-        .from("products")
-        .update(payload)
-        .eq("id", editing.id);
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.from("products").insert([payload]);
-      if (error) throw error;
-    }
 
-    refresh();
-    close();
-  } catch (err) {
-    console.error(err);
-    alert(err.message);
-  }
+const logout = async () => {
+  await supabase.auth.signOut();
+  window.location.href = "/admin";
 };
 
+const refresh = async () => {
+  await fetchProducts();
+  setOpen(false);
+  setEditing(null);
+  setForm({
+    name: "",
+    price: "",
+    category: "",
+    description: "",
+    image: null,
+  });
+};
 
+  const openEdit = (product) => {
+    setEditing(product);
+    setForm({ ...product, image: null }); // keep current image URL
+    setOpen(true);
+  };
+
+  
   // Delete Product
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this product?")) return;

@@ -43,6 +43,7 @@ const uploadImage = async (file) => {
 
   const submit = async (e) => {
     e.preventDefault();
+    setUploading(true); // START uploading
     try {
       let imageUrl = form.image
         ? await uploadImage(form.image)
@@ -69,8 +70,11 @@ const uploadImage = async (file) => {
     } catch (err) {
       console.error(err);
       alert(err.message);
+    } finally {
+      setUploading(false); // STOP uploading
     }
   };
+
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
