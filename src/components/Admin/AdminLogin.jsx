@@ -1,33 +1,27 @@
 import React, { useState } from "react";
-import { supabase } from "../../lib/supabase"; // adjust path if needed
+import { supabase } from "../../lib/supabase";
+import { useNavigate } from "react-router-dom";
 
-export default function AdminLogin({ onLoginSuccess }) {
+export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
 
-    try {
-      // Sign in with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-      if (error) {
-        alert(error.message);
-      } else if (data.user) {
-        onLoginSuccess(); // call callback to redirect or show dashboard
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Login failed. Check console.");
-    } finally {
-      setLoading(false);
+    if (error) {
+      alert(error.message);
+      return;
     }
+
+    // ✅ Login successful → go to dashboard
+    navigate("/admin/dashboard");
   };
 
   return (
@@ -40,7 +34,7 @@ export default function AdminLogin({ onLoginSuccess }) {
 
         <input
           type="email"
-          placeholder="Email"
+          placeholder="Admin Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="w-full p-3 border rounded"
@@ -56,12 +50,8 @@ export default function AdminLogin({ onLoginSuccess }) {
           required
         />
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-pink-600 text-white p-3 rounded hover:bg-pink-700 transition"
-        >
-          {loading ? "Logging in..." : "Login"}
+        <button className="w-full bg-pink-600 text-white p-3 rounded">
+          Login
         </button>
       </form>
     </div>
