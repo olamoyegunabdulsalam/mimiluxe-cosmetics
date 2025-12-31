@@ -67,21 +67,19 @@ export default function Dashboard() {
 
 
 const uploadImage = async (file) => {
-  const fileName = `${Date.now()}-${file.name}`; 
-  const { data, error } = await supabase.storage
-    .from("products") 
-    .upload(`products/${fileName}`, file)
+  const fileName = `${Date.now()}-${file.name}`;
+
+  const { error } = await supabase.storage
+    .from("products")
+    .upload(fileName, file); 
 
   if (error) throw error;
 
-  const { publicUrl, error: urlError } = supabase.storage
-    .from("products")
-    .getPublicUrl(`products/${fileName}`);
+  const { data } = supabase.storage.from("products").getPublicUrl(fileName);
 
-  if (urlError) throw urlError;
-
-  return publicUrl;
+  return data.publicUrl; 
 };
+
 
 
  const handleSubmit = async (e) => {
