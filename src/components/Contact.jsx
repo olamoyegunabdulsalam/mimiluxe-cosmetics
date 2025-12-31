@@ -6,7 +6,7 @@ import { FaTiktok } from "react-icons/fa";
 export const Contact = ({ onWhatsAppClick }) => {
   return (
     <section className="py-20 bg-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-2 gap-16">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 gap-16">
         {/* Contact Info */}
         <div>
           <h2 className="text-4xl font-bold text-gray-900 mb-6">
@@ -53,35 +53,6 @@ export const Contact = ({ onWhatsAppClick }) => {
           >
             Start WhatsApp Chat
           </button>
-        </div>
-
-        {/* Contact Form */}
-        <div className="bg-white rounded-2xl p-10 shadow-sm">
-          <h3 className="text-2xl font-semibold mb-6">Send a Message</h3>
-          <form className="space-y-5">
-            <input
-              type="text"
-              placeholder="Your Name"
-              className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-pink-400 focus:border-pink-400"
-            />
-            <input
-              type="email"
-              placeholder="Your Email"
-              className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-pink-400 focus:border-pink-400"
-            />
-            <textarea
-              rows="4"
-              placeholder="Your Message"
-              className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-1 focus:ring-pink-400 focus:border-pink-400"
-            ></textarea>
-            <button
-              type="button"
-              onClick={() => onWhatsAppClick()}
-              className="w-full bg-pink-600 hover:bg-pink-700 text-white py-3 rounded-lg font-semibold transition"
-            >
-              Send via WhatsApp
-            </button>
-          </form>
         </div>
       </div>
     </section>
